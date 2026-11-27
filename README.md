@@ -46,7 +46,7 @@ Download [multipass-1.17.1+mac-Darwin.pkg](https://github.com/canonical/multipas
 ### 1.3 Preparing an Ubuntu 26.04 virtual machine
 #### 1.3.1 Launch a multipass VM
 ```
-multipass launch 26.04 --memory 4G --disk 30G --name mcp-demo
+multipass launch 26.04 --memory 8G --disk 36G --name mcp-demo
 multipass shell mcp-demo
 ```
 
