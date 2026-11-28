@@ -1,7 +1,6 @@
 # Workshop: Building MCP Applications with Spring AI
 
-## 1. Setup
-
+## 1. Setup (30m)
 ### 1.1 Install multipass
 #### 1.1.1 Ubuntu
 On Ubuntu `multipass` may be installed as a snap:
@@ -46,7 +45,7 @@ Download [multipass-1.17.1+mac-Darwin.pkg](https://github.com/canonical/multipas
 ### 1.3 Preparing an Ubuntu 26.04 virtual machine
 #### 1.3.1 Launch a multipass VM
 ```
-multipass launch 26.04 --memory 8G --disk 36G --name mcp-demo
+multipass launch 26.04 --cpus 4 --memory 10G --disk 36G --name mcp-demo
 multipass shell mcp-demo
 ```
 
@@ -60,13 +59,16 @@ sudo apt install openjdk-21-jdk-headless
 sudo snap install devpack-for-spring --classic
 ```
 
-#### 1.3.4 Install GLM 4.7
+#### 1.3.4 Install Qwen3
+Install the Qwen3 inference snap. The installation may take a few minutes.
 ```
-sudo snap install glm-4-7-flash
+sudo snap install qwen3
 ```
+The qwen3 endpoint should be available immediately after install. Check with this command:
 ```
-glm-4-7-flash status
+qwen3 status
 ```
+
 The expected output is:
 ```
 engine: cpu
@@ -75,13 +77,23 @@ services:
     server-webui: active
 entrypoints:
     openai:
-        url: http://127.0.0.1:8354/v1
+        url: http://127.0.0.1:8338/v1
     webui:
-        url: http://127.0.0.1:8355
+        url: http://127.0.0.1:8339
 model:
-    name: glm-4.7-flash-30b-a3b
+    name: qwen3-8b
 ```
-## Implementing an MCP server
+
+Also, ensure that the model is loaded by issuing:
+```
+curl -s http://127.0.0.1:8338/v1/models
+```
+This should not report an `unavailable_error`.
+
+## 2 Implementing an MCP server (20m)
+
+### 2.1 Initialize the project
+Initialize a Spring Boot project using `devpack-for-spring`:
 ```
 devpack-for-spring boot start \
       --path $PWD/currency-converter-mcp \
@@ -98,12 +110,14 @@ devpack-for-spring boot start \
       --packaging jar \
       --java-version 21
 ```
+Note the dependencies used in the above command.
 
-```
-mkdir -p src/main/java/com/example/demo
-```
-code src/main/java/com/example/demo/CurrencyConverter.java
-```
+
+### 2.2 Implementation
+
+#### 2.2.1 Implementing a CurrencyConverter using the frankfurter API 
+
+Add the following code to `src/main/java/com/example/demo/CurrencyConverter.java`:
 ```
 package com.example.demo;
 
@@ -150,4 +164,57 @@ public class CurrencyConverter {
 
 }
 ```
-## Extending a chat-client for MCP
+
+#### 2.2.2 Adding configuration properties
+
+Add the following properties to `src/main/resources/application.properties`:
+```
+server.port=9090
+spring.ai.mcp.server.protocol=STREAMABLE
+```
+
+### 2.3 Testing the MCP
+
+#### 2.3.1 Run the application
+Run the application using gradle:
+```
+./gradlew bootRun
+```
+#### 2.3.2 Note the IP address of the VM
+In a new terminal window, issue the following command:
+```
+multipass info mcp-demo | grep "IP"
+```
+Note the IPv4 address echo'd above.
+
+#### 2.3.2 Test using MCP Inspector
+In the same window, issue the following command:
+```
+npx @modelcontextprotocol/inspector
+```
+
+This should open up a browser tab with the MCP Inspector UI. Follow these steps to run a test:
+ - Click **Add Servers** -> **Add manually**
+ - In the Add server window:
+     - set `Server ID` to `currency-conversion-mcp`
+     - set `Transport` to `streamable-http` and
+     - set `URL` to `http://[ip-address]:9090/mcp` (use IP address from the previous step)
+- Click **Add**. The Servers tab will show a new UI element for this MCP server.
+  <img width="594" height="332" alt="Screenshot From 2026-11-28 12-20-18" src="https://github.com/user-attachments/assets/fe5f6328-57fb-4b88-9127-fd295338cc64" />
+
+- Click the toggle button at the top-right of this UI element, to connect to the MCP server. A successful connection (or a failure) should be indicated by the user-interface.
+  <img width="682" height="331" alt="Screenshot From 2026-11-28 12-21-05" src="https://github.com/user-attachments/assets/70dbef52-bf38-4614-a5a7-f397432c57ae" />
+
+- If the connection is successful, click on the Tools tab. In the tools view, you should see the convert tool listed.
+  <img width="700" height="359" alt="Screenshot From 2026-11-28 12-22-52" src="https://github.com/user-attachments/assets/b289dd4a-24fb-4f72-affe-20d76d0c84ff" />
+
+- Click on convert. This should open up a dialog listing the tool-parameters.
+  <img width="1008" height="554" alt="Screenshot From 2026-11-28 12-23-48" src="https://github.com/user-attachments/assets/16fcf26b-0db6-45c0-9cbd-3941f9aea611" />
+
+- Entering valid values and clicking Execute Tool should show this:
+  <img width="1005" height="194" alt="Screenshot From 2026-11-28 12-24-28" src="https://github.com/user-attachments/assets/1be178a5-3501-4794-bf57-45c18bcf06f5" />
+
+
+The MCP server is now ready and we can move to the client implementation.
+
+## Extending a chat-client for MCP (30m)
