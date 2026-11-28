@@ -1,6 +1,6 @@
 # Workshop: Building MCP Applications with Spring AI
 
-## 1. Setup (30m)
+## 1 Setup (30m)
 ### 1.1 Install multipass
 #### 1.1.1 Ubuntu
 On Ubuntu `multipass` may be installed as a snap:
@@ -217,4 +217,10 @@ This should open up a browser tab with the MCP Inspector UI. Follow these steps 
 
 The MCP server is now ready and we can move to the client implementation.
 
-## Extending a chat-client for MCP (30m)
+## 3 Extending a Spring AI-based chat-client with MCP (30m)
+
+### 3.1 Testing an existing chat-client application without MCP
+
+### 3.2 Extending the chat-client to include MCP
+
+### 3.3 Testing the chat-client with MCP
